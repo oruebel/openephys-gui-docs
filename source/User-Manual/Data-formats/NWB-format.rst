@@ -26,7 +26,9 @@ This page describes the files written by version 2.0 and later of the NWB Format
 
 * Files can be read using the `PyNWB <https://pynwb.readthedocs.io/en/stable/index.html>`__ or `MatNWB <https://github.com/NeurodataWithoutBorders/matnwb>`__ libraries, or with the growing number of high-level tools that support the NWB format.
 
-* Files are written in HDF5 SWMR (single-writer, multiple-reader) mode and flushed regularly, so data up to the last flush remains readable if the GUI crashes during a recording.
+* Files are written in HDF5 SWMR (single-writer, multiple-reader) mode, which keeps the file consistent at any time, so a crash doesn't leave a damaged file. Other programs can read the file during a recording by opening it as an SWMR reader.
+
+* Files are flushed every 10 s during a recording and when a recording stops, so data up to the last flush remains readable if the GUI crashes (see :ref:`nwbaftercrash`).
 
 **Limitations**
 
@@ -223,6 +225,17 @@ Reading data in Matlab
 * Use the `MatNWB <https://github.com/NeurodataWithoutBorders/matnwb>`__ library.
 
 * The `open-ephys-matlab-tools <https://github.com/open-ephys/open-ephys-matlab-tools>`__ library currently reads only files written by earlier versions of the plugin (see :ref:`nwbearlierversions`).
+
+.. _nwbaftercrash:
+
+Opening a file after a crash
+#############################
+
+If the GUI crashes during a recording, HDF5 still marks the file as open for writing, and opening it normally (e.g., with PyNWB) fails with "file is already open for write (may use <h5clear file> to clear file consistency flags)". The data up to the last flush are in the file. To open it, either:
+
+* reset the flags once with :code:`h5clear -s experiment1.nwb`, after which PyNWB and other tools can read the file. :code:`h5clear` only resets these flags; it is part of the HDF5 command-line tools (e.g., :code:`conda install -c conda-forge hdf5`), not of the h5py package;
+
+* or open the file as an SWMR reader, e.g., :code:`h5py.File("experiment1.nwb", "r", swmr=True)`.
 
 Playing back NWB files
 #######################
